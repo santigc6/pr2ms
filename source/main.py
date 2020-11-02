@@ -2,7 +2,6 @@ import math
 import numpy as np
 import os
 
-
 distrib = np.loadtxt(f"{os.path.dirname(os.path.realpath(__file__))}/E2.fallos.txt")
 mu = distrib.mean()
 sigmaCuad = distrib.var()
@@ -11,8 +10,7 @@ sigma = distrib.std()
 x1 = (0, 0.55)
 x2 = (1000, 1.65)
 slope = (x2[1] - x1[1]) / (x2[0] - x1[0])
-b = x1[1]*(1 - slope) # It is x[1] since l(x) = ax + b and l(0)=x[1]
-
+b = x1[1] # It is x[1] since l(x) = ax + b and l(0)=x[1]
 
 # l(x) = ax + b
 def ratio(x):
@@ -62,7 +60,11 @@ def simulate(
     not_working_time = 0
 
     for time in range(iters):
+        if verbose:
+            print(f"________{time}________")
         for i, machine in enumerate(working):
+            if machine and verbose:
+                print(f"{machine.break_time}")
             if machine and machine.break_time == time:
                 waiting_repair.append(machine)
                 try:
@@ -71,7 +73,7 @@ def simulate(
                     working[i] = new_machine
                 except IndexError:
                     if verbose:
-                        print("Se ha roto y no hay + máquinas :(")
+                        print("Se ha roto y no hay + máquinas")
                     working[i] = None
                 if verbose:
                     print(f"Se rompe en t={time}, la cola es ahora: {len(waiting)}, hay: {sum(x is None for x in working)} Nones, La nueva se romperá en t = {new_machine.break_time} ")
@@ -93,9 +95,9 @@ def simulate(
         removers = []
         for i, repairman in enumerate(repairmen_working):
             if repairman.end_repair_time == time:
-                waiting.append(
-                    repairing.pop(repairing.index(repairman.repairing_machine))
-                )
+                repaired_machine = repairing.pop(repairing.index(repairman.repairing_machine))
+                repaired_machine.set_new_break_time(time)
+                waiting.append(repaired_machine)
                 repairmen.append(repairman)
                 removers.append(i)
         repairmen_working = [
@@ -104,18 +106,21 @@ def simulate(
 
         if None in working and waiting:
             if verbose:
-                print(f"Vamos a rellenar sisisis. Hay {sum(x is None for x in working)} Nones y waiting es {len(waiting)}")
+                print(f"Vamos a rellenar. Hay {sum(x is None for x in working)} Nones y waiting es {len(waiting)}")
             for _ in range(sum(x is None for x in working)):
                 try:
                     working.append(waiting.pop(0))
                     working.remove(None)
                 except IndexError:
+                    if verbose:
+                        print(f"No hay más máquinas para añadir, se quedan {sum(x is None for x in working)} None")
                     break
             if verbose:
                 print("...........................................................................................")
         if None not in working:
             working_time += 1
         elif verbose:
+            print("System not working")
             not_working_time += 1
     if verbose:
         print(not_working_time, working_time, not_working_time + working_time)
