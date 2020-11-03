@@ -96,7 +96,6 @@ def simulate(
         for i, repairman in enumerate(repairmen_working):
             if repairman.end_repair_time == time:
                 repaired_machine = repairing.pop(repairing.index(repairman.repairing_machine))
-                repaired_machine.set_new_break_time(time)
                 waiting.append(repaired_machine)
                 repairmen.append(repairman)
                 removers.append(i)
@@ -109,7 +108,9 @@ def simulate(
                 print(f"Vamos a rellenar. Hay {sum(x is None for x in working)} Nones y waiting es {len(waiting)}")
             for _ in range(sum(x is None for x in working)):
                 try:
-                    working.append(waiting.pop(0))
+                    new_machine = waiting.pop(0)
+                    new_machine.set_new_break_time(time)
+                    working.append(new_machine)
                     working.remove(None)
                 except IndexError:
                     if verbose:
