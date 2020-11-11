@@ -58,6 +58,7 @@ def simulate(
     repairing = []
     working_time = 0
     not_working_time = 0
+    all_repairmen_working_time = 0
 
     for time in range(iters):
         if verbose:
@@ -123,9 +124,11 @@ def simulate(
         elif verbose:
             print("System not working")
             not_working_time += 1
+        if not repairmen:
+            all_repairmen_working_time += 1
     if verbose:
         print(not_working_time, working_time, not_working_time + working_time)
-    return working_time / iters
+    return working_time / iters, all_repairmen_working_time / iters
 
 
 if __name__ == "__main__":
