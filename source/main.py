@@ -136,9 +136,9 @@ def simulate(
             working_time += (min(end, next_event) - time)
         elif verbose:
             print("System not working")
-            not_working_time += 1
+            not_working_time += (min(end, next_event) - time)
         if not repairmen:
-            all_repairmen_working_time += (next_event - time)
+            all_repairmen_working_time += (min(end, next_event) - time)
     if verbose:
         print(not_working_time, working_time, not_working_time + working_time)
     return working_time / end, all_repairmen_working_time / end
