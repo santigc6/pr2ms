@@ -131,12 +131,12 @@ def simulate(
                 print("...........................................................................................")
         next_event, _ = sorted(events_stack, key = lambda x: x[0])[0]
         if None not in working:
-            working_time += (next_event - time)
+            working_time += (min(end, next_event) - time)
         elif verbose:
             print("System not working")
             not_working_time += 1
         if not repairmen:
-            all_repairmen_working_time += (next_event - time)
+            all_repairmen_working_time += (min(end, next_event) - time)
         events_stack.sort(key=lambda x : x[0])
     if verbose:
         print(not_working_time, working_time, not_working_time + working_time)
