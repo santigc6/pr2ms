@@ -61,27 +61,29 @@ def simulate(
     all_repairmen_working_time = 0
     events_stack = sorted([(mach.break_time, "m") for mach in working], key=lambda x : x[0])
 
+    working_time+=events_stack[0][0] # time untill the first event as working time
+    
     while events_stack[0][0] < end:
         time, _ = events_stack.pop(0)
         if verbose:
             print(f"________{time}________")
         for i, machine in enumerate(working):
             if machine and verbose:
-                print(f"{machine.break_time}")
+                print(f"Machine break time: {machine.break_time}")
             if machine and machine.break_time == time:
                 waiting_repair.append(machine)
                 try:
-                    new_machine = waiting.pop(0)  # First machine in the queue
-                    new_machine.set_new_break_time(time)
-                    events_stack.append((new_machine.break_time, "m"))
+                    new_mach = waiting.pop(0)  # First machine in the queue
+                    new_mach.set_new_break_time(time)
+                    events_stack.append((new_mach.break_time, "m"))
                     events_stack.sort(key=lambda x : x[0])
-                    working[i] = new_machine
+                    working[i] = new_mach
                 except IndexError:
                     if verbose:
                         print("Se ha roto y no hay + máquinas")
                     working[i] = None
-                if verbose:
-                    print(f"Se rompe en t={time}, la cola es ahora: {len(waiting)}, hay: {sum(x is None for x in working)} Nones, La nueva se romperá en t = {new_machine.break_time} ")
+                if verbose and working[i]:
+                    print(f"Se rompe en t={time}, la cola es ahora: {len(waiting)}, hay: {sum(x is None for x in working)} Nones, La nueva se romperá en t = {new_mach.break_time} ")
                     print("___________________________________________________________________________________________")
 
         removers = []
@@ -127,15 +129,15 @@ def simulate(
                     break
             if verbose:
                 print("...........................................................................................")
+        next_event, _ = sorted(events_stack, key = lambda x: x[0])[0]
         if None not in working:
-            next_broken, _ = sorted(events_stack, key=lambda x: x[1])[0]
-            working_time += (next_broken - time)
+            working_time += (next_event - time)
         elif verbose:
             print("System not working")
             not_working_time += 1
         if not repairmen:
-            next_stop, _ = sorted(events_stack, key=lambda x: x[1], reverse=True)[0]
-            all_repairmen_working_time += (next_stop - time)
+            all_repairmen_working_time += (next_event - time)
+        events_stack.sort(key=lambda x : x[0])
     if verbose:
         print(not_working_time, working_time, not_working_time + working_time)
     return working_time / end, all_repairmen_working_time / end
