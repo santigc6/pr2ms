@@ -153,7 +153,7 @@ if __name__ == "__main__":
     parser.add_argument("--n_working_machines", default=10, type=int, help="Number of working machines needed to have the factory working",)
     parser.add_argument("--n_repairmen", default=3, type=int, help="Number of machines that can be repaired at a time.",)
     parser.add_argument("--n_waiting_machines", default=4, type=int, help="Number of machines in the queue if a working machine fails.",)
-    parser.add_argument("--end", default=end, type=int, help="Time of the simulation in fractions of 0.01h. i.e. 10h -> end=1000.",)
+    parser.add_argument("--end", default=end, type=int, help="Time of the simulation in hours.",)
     parser.add_argument("-v", "--verbose", default=False, type=bool, help="Wether to print ongoing events or not."),
 
     args = parser.parse_args()
