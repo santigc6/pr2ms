@@ -64,7 +64,9 @@ def simulate(
     working_time+=events_stack[0][0] # time untill the first event as working time
     
     while events_stack[0][0] < end:
+        events_stack=sorted([t for t in (set(tuple(i) for i in events_stack))], key=lambda x : x[0]) # Remove duplicates and sort just in case
         time, _ = events_stack.pop(0)
+        
         if verbose:
             print(f"________{time}________")
         for i, machine in enumerate(working):
@@ -137,7 +139,6 @@ def simulate(
             not_working_time += 1
         if not repairmen:
             all_repairmen_working_time += (next_event - time)
-        events_stack.sort(key=lambda x : x[0])
     if verbose:
         print(not_working_time, working_time, not_working_time + working_time)
     return working_time / end, all_repairmen_working_time / end
