@@ -47,7 +47,7 @@ def simulate(
     n_working_machines=10,
     n_repairmen=3,
     n_waiting_machines=4,
-    iters=100000,
+    end=100000,
     verbose=False,
 ):
     working = [Machine() for i in range(n_working_machines)]
@@ -59,8 +59,10 @@ def simulate(
     working_time = 0
     not_working_time = 0
     all_repairmen_working_time = 0
+    events_stack = sorted([(mach.break_time, "m") for mach in working], key=lambda x : x[0])
 
-    for time in range(iters):
+    while events_stack[0][0] < end:
+        time, _ = events_stack.pop(0)
         if verbose:
             print(f"________{time}________")
         for i, machine in enumerate(working):
@@ -71,6 +73,8 @@ def simulate(
                 try:
                     new_machine = waiting.pop(0)  # First machine in the queue
                     new_machine.set_new_break_time(time)
+                    events_stack.append((new_machine.break_time, "m"))
+                    events_stack.sort(key=lambda x : x[0])
                     working[i] = new_machine
                 except IndexError:
                     if verbose:
@@ -85,6 +89,8 @@ def simulate(
             if waiting_repair:
                 machine = waiting_repair.pop(0)
                 repairman.set_repair_time(time, machine)
+                events_stack.append((repairman.end_repair_time, "r"))
+                events_stack.sort(key=lambda x : x[0])
                 repairmen_working.append(repairman)
                 repairing.append(machine)
                 removers.append(i)
@@ -111,6 +117,8 @@ def simulate(
                 try:
                     new_machine = waiting.pop(0)
                     new_machine.set_new_break_time(time)
+                    events_stack.append((new_machine.break_time, "m"))
+                    events_stack.sort(key=lambda x : x[0])
                     working.append(new_machine)
                     working.remove(None)
                 except IndexError:
@@ -120,15 +128,17 @@ def simulate(
             if verbose:
                 print("...........................................................................................")
         if None not in working:
-            working_time += 1
+            next_broken, _ = sorted(events_stack, key=lambda x: x[1])[0]
+            working_time += (next_broken - time)
         elif verbose:
             print("System not working")
             not_working_time += 1
         if not repairmen:
-            all_repairmen_working_time += 1
+            next_stop, _ = sorted(events_stack, key=lambda x: x[1], reverse=True)[0]
+            all_repairmen_working_time += (next_stop - time)
     if verbose:
         print(not_working_time, working_time, not_working_time + working_time)
-    return working_time / iters, all_repairmen_working_time / iters
+    return working_time / end, all_repairmen_working_time / end
 
 
 if __name__ == "__main__":
@@ -138,7 +148,7 @@ if __name__ == "__main__":
     parser.add_argument("--n_working_machines", default=10, type=int, help="Number of working machines needed to have the factory working",)
     parser.add_argument("--n_repairmen", default=3, type=int, help="Number of machines that can be repaired at a time.",)
     parser.add_argument("--n_waiting_machines", default=4, type=int, help="Number of machines in the queue if a working machine fails.",)
-    parser.add_argument("--iters", default=100000, type=int, help="Time of the simulation in fractions of 0.01h. i.e. 10h -> iters=1000.",)
+    parser.add_argument("--end", default=end, type=int, help="Time of the simulation in fractions of 0.01h. i.e. 10h -> end=1000.",)
     parser.add_argument("-v", "--verbose", default=False, type=bool, help="Wether to print ongoing events or not."),
 
     args = parser.parse_args()
@@ -146,7 +156,7 @@ if __name__ == "__main__":
         n_working_machines=args.n_working_machines,
         n_repairmen=args.n_repairmen,
         n_waiting_machines=args.n_waiting_machines,
-        iters=args.iters,
+        end=args.end,
         verbose=args.verbose,
     )
     print(result)
