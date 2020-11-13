@@ -22,7 +22,7 @@ class Machine():
         self.break_time = self.get_break_time(0)
 
     def get_break_time(self, now):
-        return math.trunc(np.random.normal(mu, sigma) * 100 + now)
+        return math.trunc(np.random.normal(mu, sigma) + now)
 
     def set_new_break_time(self, now):
         self.break_time = self.get_break_time(now)
@@ -34,8 +34,8 @@ class Repairman():
         self.repairing_machine = None
 
     def get_repair_time(self, now):
-        lambda_param = ratio(now / 100)
-        maq_frac_hora = np.random.exponential(1/lambda_param) * 100
+        lambda_param = ratio(now)
+        maq_frac_hora = np.random.exponential(1/lambda_param)
         return math.trunc(maq_frac_hora + now)
 
     def set_repair_time(self, now, machine):
@@ -47,7 +47,7 @@ def simulate(
     n_working_machines=10,
     n_repairmen=3,
     n_waiting_machines=4,
-    end=100000,
+    end=1000,
     verbose=False,
 ):
     working = [Machine() for i in range(n_working_machines)]
@@ -59,13 +59,13 @@ def simulate(
     working_time = 0
     not_working_time = 0
     all_repairmen_working_time = 0
-    events_stack = sorted([(mach.break_time, "m") for mach in working], key=lambda x : x[0])
+    events_stack = sorted([mach.break_time for mach in working])
 
-    working_time+=events_stack[0][0] # time untill the first event as working time
+    working_time+=events_stack[0] # time untill the first event as working time
     
-    while events_stack[0][0] < end:
-        events_stack=sorted([t for t in (set(tuple(i) for i in events_stack))], key=lambda x : x[0]) # Remove duplicates and sort just in case
-        time, _ = events_stack.pop(0)
+    while events_stack[0] < end:
+        events_stack=sorted(list(set(events_stack))) # Remove duplicates and sort just in case
+        time = events_stack.pop(0)
         
         if verbose:
             print(f"________{time}________")
@@ -77,8 +77,8 @@ def simulate(
                 try:
                     new_mach = waiting.pop(0)  # First machine in the queue
                     new_mach.set_new_break_time(time)
-                    events_stack.append((new_mach.break_time, "m"))
-                    events_stack.sort(key=lambda x : x[0])
+                    events_stack.append(new_mach.break_time)
+                    events_stack.sort()
                     working[i] = new_mach
                 except IndexError:
                     if verbose:
@@ -93,8 +93,8 @@ def simulate(
             if waiting_repair:
                 machine = waiting_repair.pop(0)
                 repairman.set_repair_time(time, machine)
-                events_stack.append((repairman.end_repair_time, "r"))
-                events_stack.sort(key=lambda x : x[0])
+                events_stack.append(repairman.end_repair_time)
+                events_stack.sort()
                 repairmen_working.append(repairman)
                 repairing.append(machine)
                 removers.append(i)
@@ -121,8 +121,8 @@ def simulate(
                 try:
                     new_machine = waiting.pop(0)
                     new_machine.set_new_break_time(time)
-                    events_stack.append((new_machine.break_time, "m"))
-                    events_stack.sort(key=lambda x : x[0])
+                    events_stack.append(new_machine.break_time)
+                    events_stack.sort()
                     working.append(new_machine)
                     working.remove(None)
                 except IndexError:
@@ -131,12 +131,14 @@ def simulate(
                     break
             if verbose:
                 print("...........................................................................................")
-        next_event, _ = sorted(events_stack, key = lambda x: x[0])[0]
+        next_event = sorted(events_stack)[0]
         if None not in working:
             working_time += (min(end, next_event) - time)
         elif verbose:
             print("System not working")
             not_working_time += (min(end, next_event) - time)
+        if verbose:
+            print("Working time:", working_time)
         if not repairmen:
             all_repairmen_working_time += (min(end, next_event) - time)
     if verbose:
