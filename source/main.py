@@ -22,7 +22,7 @@ class Machine():
         self.break_time = self.get_break_time(0)
 
     def get_break_time(self, now):
-        return math.trunc(np.random.normal(mu, sigma) + now)
+        return math.trunc(np.random.normal(mu, sigma)*100 + now)
 
     def set_new_break_time(self, now):
         self.break_time = self.get_break_time(now)
@@ -34,8 +34,8 @@ class Repairman():
         self.repairing_machine = None
 
     def get_repair_time(self, now):
-        lambda_param = ratio(now)
-        maq_frac_hora = np.random.exponential(1/lambda_param)
+        lambda_param = ratio(now/100)
+        maq_frac_hora = np.random.exponential(1/lambda_param)*100
         return math.trunc(maq_frac_hora + now)
 
     def set_repair_time(self, now, machine):
@@ -47,7 +47,7 @@ def simulate(
     n_working_machines=10,
     n_repairmen=3,
     n_waiting_machines=4,
-    end=1000,
+    end=100000,
     verbose=False,
 ):
     working = [Machine() for i in range(n_working_machines)]
@@ -69,6 +69,7 @@ def simulate(
         
         if verbose:
             print(f"________{time}________")
+            print(events_stack)
         for i, machine in enumerate(working):
             if machine and verbose:
                 print(f"Machine break time: {machine.break_time}")
@@ -78,7 +79,7 @@ def simulate(
                     new_mach = waiting.pop(0)  # First machine in the queue
                     new_mach.set_new_break_time(time)
                     events_stack.append(new_mach.break_time)
-                    events_stack.sort()
+                    events_stack=sorted(list(set(events_stack))) # Remove duplicates and sort just in case
                     working[i] = new_mach
                 except IndexError:
                     if verbose:
@@ -89,21 +90,6 @@ def simulate(
                     print("___________________________________________________________________________________________")
 
         removers = []
-        for i, repairman in enumerate(repairmen):
-            if waiting_repair:
-                machine = waiting_repair.pop(0)
-                repairman.set_repair_time(time, machine)
-                events_stack.append(repairman.end_repair_time)
-                events_stack.sort()
-                repairmen_working.append(repairman)
-                repairing.append(machine)
-                removers.append(i)
-                if verbose:
-                    print(f"Hay waiting en t = {time}, la máquina estará en t = {repairman.end_repair_time}")
-                    print("-------------------------------------------------------------------------------------------")
-        repairmen = [rep for i, rep in enumerate(repairmen) if i not in removers]
-
-        removers = []
         for i, repairman in enumerate(repairmen_working):
             if repairman.end_repair_time == time:
                 repaired_machine = repairing.pop(repairing.index(repairman.repairing_machine))
@@ -112,7 +98,22 @@ def simulate(
                 removers.append(i)
         repairmen_working = [
             rep for i, rep in enumerate(repairmen_working) if i not in removers
-        ]
+        ]            
+                    
+        removers = []
+        for i, repairman in enumerate(repairmen):
+            if waiting_repair:
+                machine = waiting_repair.pop(0)
+                repairman.set_repair_time(time, machine)
+                events_stack.append(repairman.end_repair_time)
+                events_stack=sorted(list(set(events_stack))) # Remove duplicates and sort just in case
+                repairmen_working.append(repairman)
+                repairing.append(machine)
+                removers.append(i)
+                if verbose:
+                    print(f"Hay waiting en t = {time}, la máquina estará en t = {repairman.end_repair_time}")
+                    print("-------------------------------------------------------------------------------------------")
+        repairmen = [rep for i, rep in enumerate(repairmen) if i not in removers]
 
         if None in working and waiting:
             if verbose:
@@ -122,7 +123,7 @@ def simulate(
                     new_machine = waiting.pop(0)
                     new_machine.set_new_break_time(time)
                     events_stack.append(new_machine.break_time)
-                    events_stack.sort()
+                    events_stack=sorted(list(set(events_stack))) # Remove duplicates and sort just in case
                     working.append(new_machine)
                     working.remove(None)
                 except IndexError:
@@ -131,16 +132,14 @@ def simulate(
                     break
             if verbose:
                 print("...........................................................................................")
-        next_event = sorted(events_stack)[0]
+        events_stack=sorted(list(set(events_stack))) # Remove duplicates and sort just in case
+        next_event=events_stack[0]
         if None not in working:
             working_time += (min(end, next_event) - time)
-        elif verbose:
-            print("System not working")
-            not_working_time += (min(end, next_event) - time)
-        if verbose:
-            print("Working time:", working_time)
         if not repairmen:
             all_repairmen_working_time += (min(end, next_event) - time)
+        if verbose:
+            print("Working time:", working_time)
     if verbose:
         print(not_working_time, working_time, not_working_time + working_time)
     return working_time / end, all_repairmen_working_time / end
